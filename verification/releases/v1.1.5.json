@@ -1,0 +1,22 @@
+{
+  "version": "1.1.5",
+  "assets": {
+    "PRTS-Linux-1.1.5.tar.gz": {
+      "bytes": 187668179,
+      "sha256": "d8894f85b8b8dc78c5b54f5029bc9b57623f63bd1a1d53e0ef490c79b53482f7"
+    },
+    "PRTS-macOS-1.1.5.zip": {
+      "bytes": 5206593,
+      "sha256": "35b712f1c56c8b69beb6c45a5cca1a01fa0fdce044d179769c99fe7bb7a671df"
+    },
+    "PRTS-Windows-1.1.5.zip": {
+      "bytes": 56999103,
+      "sha256": "ddec5f324430c6b6a14d7c65befed41abc71bf944159b566bb9ace130bd24a17"
+    }
+  },
+  "scope": {
+    "Windows": "Installer startup, idle recovery, logon supervision and drag toggle fixes",
+    "macOS": "Version/cape metadata update; existing static and native looping themes retained",
+    "Linux": "Version/theme metadata and integrity manifest update; existing desktop installation retained"
+  }
+}

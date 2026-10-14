@@ -1,0 +1,68 @@
+name: Verify release packages
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to verify
+        required: true
+        default: v1.1.5
+permissions:
+  contents: read
+jobs:
+  verify:
+    name: ${{ matrix.platform }} native verification
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            platform: Linux
+            archive: PRTS-Linux-1.1.5.tar.gz
+          - os: macos-latest
+            platform: macOS
+            archive: PRTS-macOS-1.1.5.zip
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install validation library
+        run: python -m pip install Pillow==11.3.0
+      - name: Download the exact release package
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.tag }}
+          ARCHIVE: ${{ matrix.archive }}
+        run: gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --pattern "$ARCHIVE" --dir downloads
+      - name: Verify archive, integrity, metadata and all cursor resources
+        run: python verification/verify_payload.py "${{ matrix.platform }}" "downloads/${{ matrix.archive }}" --work results/payload --manifest verification/releases/v1.1.5.json
+      - name: Linux installer failure and recovery checks
+        if: runner.os == 'Linux'
+        run: python verification/linux_installer_test.py results/payload/extracted/PRTS-Linux --work results/installer
+      - name: macOS installer failure and recovery checks
+        if: runner.os == 'macOS'
+        run: python verification/mac_installer_test.py results/payload/extracted --work results/installer
+      - name: Install Linux native validation tools
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y libxcursor1 libx11-6 dconf-cli gsettings-desktop-schemas dbus-x11 xvfb
+      - name: Linux native Xcursor, X11 and dconf install / restore
+        if: runner.os == 'Linux'
+        run: xvfb-run -a dbus-run-session -- python verification/native_check.py Linux results/payload/extracted/PRTS-Linux --work results/native
+      - name: macOS native plist, AppleScript, BSD tools and AppKit cursor checks
+        if: runner.os == 'macOS'
+        run: python verification/native_check.py macOS results/payload/extracted --work results/native
+      - name: Save validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ matrix.platform }}
+          path: |
+            results/**/payload-result.json
+            results/**/native-result.json
+            results/**/*test-results.txt
+            results/**/*.scpt
+          if-no-files-found: warn
