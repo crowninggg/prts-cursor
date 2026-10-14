@@ -30,9 +30,13 @@ def linux(package, work):
                XDG_STATE_HOME=str(isolated / "state"), XDG_CURRENT_DESKTOP="GNOME", XDG_SESSION_TYPE="x11",
                GSETTINGS_BACKEND="dconf")
     env.pop("SUDO_USER", None)
+    # dconf-service is activated by the session bus. It must use the same
+    # isolated directories as the clients, rather than the runner's real home.
+    run(["dbus-update-activation-environment", "HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME", "XDG_STATE_HOME"], env=env)
     schema = "org.gnome.desktop.interface"
     run(["gsettings", "set", schema, "cursor-theme", "'Adwaita'"], env=env)
     run(["gsettings", "set", schema, "cursor-size", "48"], env=env)
+    assert run(["gsettings", "get", schema, "cursor-size"], env=env).strip() == "48", "Isolated dconf service/client environments do not agree"
     for action, theme in [("static", "'PRTS-Final-Static'"), ("install", "'PRTS-Final'"), ("restore", "'Adwaita'")]:
         output = run(["/bin/sh", package / "INSTALL.sh", action], env=env)
         assert run(["gsettings", "get", schema, "cursor-theme"], env=env).strip() == theme, output
