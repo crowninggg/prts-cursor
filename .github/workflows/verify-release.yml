@@ -7,7 +7,8 @@ on:
         required: true
         default: v1.1.5
 permissions:
-  contents: read
+  # GitHub requires push-level access to download a draft release before publication.
+  contents: write
 jobs:
   verify:
     name: ${{ matrix.platform }} native verification
